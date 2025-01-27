@@ -1,27 +1,38 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"net"
+	"os"
 )
 
 func main() {
-  
-  // Connect to the server
-  conn,err := net.Dial("tcp","localhost:8000")
 
-  if err != nil {
-    fmt.Println("There was an error",err)
-    return
-  }
+  // Initializing the reader
+  reader := bufio.NewReader(os.Stdin)
 
-  data := []byte("Hello, Server")
-  _,err = conn.Write(data)
+	// Connect to the server
+	conn, err := net.Dial("tcp", "localhost:8000")
 
-  if err != nil {
-    fmt.Println("Error:",err)
-    return
-  }
+	if err != nil {
+		fmt.Println("There was an error", err)
+		return
+	}
 
-  defer conn.Close()
+	for {
+
+		fmt.Print("Enter your message : ")
+    message,_ := reader.ReadString('\n')
+
+		data := []byte(message)
+		_, err = conn.Write(data)
+
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+	}
+	defer conn.Close()
 }
