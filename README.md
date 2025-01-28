@@ -3,7 +3,7 @@
 
 ## Overview
 
-This project is a **Chatroom Terminal Application** built using Go and PostgreSQL and TCP. It involves user registration, authentication via username and password, and a messaging feature. The app is structured into two main parts: a server that handles all backend operations and a client for user interaction.
+This project is a **Chatroom Terminal Application** built using Go ,PostgreSQL and TCP. It involves user registration, authentication via username and password, and a messaging feature. The app is structured into two main parts: a server that handles all backend operations and a client for user interaction.
 
 The application includes the following key features:
 - **Authentication**: Users can authenticate using their username and password.
