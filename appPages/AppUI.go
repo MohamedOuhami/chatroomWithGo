@@ -19,7 +19,7 @@ func SetupUI(conn net.Conn) {
 	})
 
 	Mainlayout := DrawMainApp(conn)
-	AuthLayout := DrawAuthApp()
+	AuthLayout := DrawRegisterApp()
 	LoginLayout := DrawLoginApp()
 
 

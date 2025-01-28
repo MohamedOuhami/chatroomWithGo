@@ -1,0 +1,10 @@
+mouhami has joined the chat ---- Tue, 28 Jan 2025 21:52:25 +01
+mouhami: Hello, Now I am connected to our group chat ---- Tue, 28 Jan 2025 21:52:36 +01
+v01d has joined the chat ---- Tue, 28 Jan 2025 21:53:07 +01
+mouhami: Hiiiiii, V01D ---- Tue, 28 Jan 2025 21:53:35 +01
+v01d: Oh hiiii, Mohamed ---- Tue, 28 Jan 2025 21:53:40 +01
+v01d: How are you doing ? ---- Tue, 28 Jan 2025 21:53:48 +01
+mouhami: Doing alright ---- Tue, 28 Jan 2025 21:53:56 +01
+mouhami: This was my realtime chat using Go and TCP ---- Tue, 28 Jan 2025 21:54:13 +01
+mouhami: Hope you like It :) ---- Tue, 28 Jan 2025 21:54:20 +01
+mouhami has left the chat ---- Tue, 28 Jan 2025 22:29:50 +01

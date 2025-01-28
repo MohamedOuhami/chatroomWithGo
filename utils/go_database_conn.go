@@ -36,7 +36,7 @@ func ConnectToDb() (*sql.DB, error) {
 
 func InsertNewUser(db *sql.DB, newUser models.UserModel) error {
 	userUsername := newUser.Username
-	userPassword := newUser.Password
+	userPassword,_ := hashPassword(newUser.Password)
 
 	sqlStatement := `INSERT INTO chatroomUsers (username,password) values ($1,$2)`
 
@@ -66,7 +66,7 @@ func ConnectWithUsername(db *sql.DB, username string, password string) error {
 	dbPassword = strings.TrimSpace(dbPassword)
 
 	// Compare the passwords
-	if password != dbPassword {
+	if verifyPassword(password,dbPassword) {
 		return fmt.Errorf("Password incorrect")
 	}
 

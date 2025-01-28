@@ -1,60 +1,46 @@
 package main
+
 import (
-    "net"
-    "github.com/rivo/tview"
+	"github.com/rivo/tview"
+	"net"
 )
 
-var (
-)
-
+var ()
 func DrawMainApp(conn net.Conn) *tview.Flex {
-
-    // Set up the message form
-    Messageform.AddInputField("Message", "", 0, nil, func(message string) {
-        messageToSend = message
-    })
-
-    Messageform.AddButton("Send", func() {
-        SendMessage(conn, MessageView, Messageform, messageToSend)
-    })
-
-    Messageform.AddButton("Quit", func() {
-        App.Stop()
-    })
-
-    // Add borders and titles to the views
-    messageBox := tview.NewBox().
-        SetBorder(true).
+    // Message view setup
+    MessageView.SetBorder(true).
         SetTitle("Chat Messages")
-    
-    usersBox := tview.NewBox().
-        SetBorder(true).
-        SetTitle("Connected Users")
 
-    // Create a flex for the message view with border
-    messageWithBorder := tview.NewFlex().
-        AddItem(messageBox, 0, 1, false)
-    messageWithBorder.Box = messageBox
-    messageWithBorder.AddItem(MessageView, 0, 1, false)
+    // Users view setup
+    ConnectedUsersView.SetBorder(true).
+        SetTitle("Online Users")
 
-    // Create a flex for the users view with border
-    usersWithBorder := tview.NewFlex().
-        AddItem(usersBox, 0, 1, false)
-    usersWithBorder.Box = usersBox
-    usersWithBorder.AddItem(ConnectedUsersView, 0, 1, false)
+    // Message form setup
+    Messageform = tview.NewForm().
+        AddInputField("Message", "", 0, nil, func(message string) {
+            messageToSend = message
+        }).
+        AddButton("Send", func() {
+            SendMessage(conn, MessageView, Messageform, messageToSend)
+        }).
+        AddButton("Quit", func() {
+            App.Stop()
+        })
+    Messageform.SetBorder(true).
+        SetTitle("Message Input")
 
-    middleLayout := tview.NewFlex().
+    // Main content area (messages and users side by side)
+    contentArea := tview.NewFlex().
         SetDirection(tview.FlexColumn).
-        AddItem(messageWithBorder, 0, 2, false).
-        AddItem(usersWithBorder, 0, 1, false)
+        AddItem(MessageView, 0, 7, false).
+        AddItem(ConnectedUsersView, 0, 3, false)
 
+    // Main layout
     layout := tview.NewFlex().
         SetDirection(tview.FlexRow).
-        AddItem(welcomeText, 3, 1, false).
-        AddItem(middleLayout, 0, 2, false).
-        AddItem(Messageform, 3, 1, true)
+        AddItem(welcomeText, 3, 0, false).
+        AddItem(contentArea, 0, 1, false).
+        AddItem(Messageform, 7, 0, true)
 
     return layout
 }
-
-

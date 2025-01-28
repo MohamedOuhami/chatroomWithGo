@@ -11,17 +11,15 @@ import (
 	"time"
 )
 
-// Starting the id from 1
 var (
-	// First id
-	id int = 1
-
-	// Create a map of client connection
-	clients = make(map[int]net.Conn)
-
-	// Create a Mutex for concurrency
-	mutex sync.RWMutex
+    // Map to store client connections with usernames as keys
+    clients = make(map[string]net.Conn)
+    // Map to store username for each connection
+    usernames = make(map[net.Conn]string)
+    // Mutex for concurrency
+    mutex sync.RWMutex
 )
+
 
 func main() {
 
@@ -85,95 +83,97 @@ func createLogFile() {
     }
 }
 
-func broadcastMessage(message string, senderId int) {
-	mutex.RLock()
-	defer mutex.RUnlock()
-	// Format the message to include timestamp
-	messageWithTimestamp := message + " ---- " + time.Now().Format(time.RFC1123) + "\n"
-
-	// Broadcast to all clients, including sender
-	for _, conn := range clients {
-		_, err := conn.Write([]byte(message + "\n"))
-		if err != nil {
-			println("There was an error broadcasting the message:", err)
-		}
-	}
-
-	// Log the message
-	appendToLog(messageWithTimestamp)
+func broadcastMessage(message string, username string) {
+    mutex.RLock()
+    defer mutex.RUnlock()
+    
+    messageWithTimestamp := message + " ---- " + time.Now().Format(time.RFC1123) + "\n"
+    
+    for _, conn := range clients {
+        _, err := conn.Write([]byte(message + "\n"))
+        if err != nil {
+            println("There was an error broadcasting the message:", err)
+        }
+    }
+    
+    appendToLog(messageWithTimestamp)
 }
 
 func broadcastConnectedUsers() {
-	mutex.RLock()
-	defer mutex.RUnlock()
-
-	// Format the connected users list
-	var userList strings.Builder
-	userList.WriteString("UserList:\n")
-	userList.WriteString("-----------------\n")
-	userList.WriteString(fmt.Sprintf("Total Users: %d\n", len(clients)))
-	userList.WriteString("-----------------\n")
-
-	for clientId := range clients {
-		userList.WriteString(fmt.Sprintf("User %d\n", clientId))
-	}
-
-	message := userList.String()
-
-	// Send to all connected clients
-	for _, conn := range clients {
-		_, err := conn.Write([]byte(message))
-		if err != nil {
-			println("Error sending user list:", err)
-		}
-	}
+    mutex.RLock()
+    defer mutex.RUnlock()
+    
+    var userList strings.Builder
+    userList.WriteString("UserList:\n")
+    userList.WriteString("-----------------\n")
+    userList.WriteString(fmt.Sprintf("Total Users: %d\n", len(clients)))
+    userList.WriteString("-----------------\n")
+    
+    for username := range clients {
+        userList.WriteString(fmt.Sprintf("%s\n", username))
+    }
+    
+    message := userList.String()
+    
+    for _, conn := range clients {
+        _, err := conn.Write([]byte(message))
+        if err != nil {
+            println("Error sending user list:", err)
+        }
+    }
 }
 
 func handleClient(conn net.Conn) {
-	// Lock for client registration
-	mutex.Lock()
-	userId := id
-	clients[userId] = conn
-	id++
-	mutex.Unlock()
-
-	// Announce new connection
-	connectionMsg := fmt.Sprintf("Client %d has joined the chat", userId)
-	broadcastMessage(connectionMsg, userId)
-
-	// Broadcast updated user list after short delay
-	time.Sleep(100 * time.Millisecond)
-	broadcastConnectedUsers()
-
-	// Cleanup on disconnect
-	defer func() {
-		mutex.Lock()
-		delete(clients, userId)
-		mutex.Unlock()
-
-		// Announce disconnection
-		disconnectMsg := fmt.Sprintf("Client %d has left the chat", userId)
-		broadcastMessage(disconnectMsg, userId)
-
-		// Update user list
-		broadcastConnectedUsers()
-
-		conn.Close()
-	}()
-
-	buffer := make([]byte, 1024)
-	for {
-		n, err := conn.Read(buffer)
-		if err != nil {
-			fmt.Printf("Client %d disconnected: %v\n", userId, err)
-			return
-		}
-
-		message := string(buffer[:n])
-		message = strings.TrimSpace(message)
-
-		// Format and broadcast the message
-		formattedMsg := fmt.Sprintf("Client %d: %s", userId, message)
-		broadcastMessage(formattedMsg, userId)
-	}
+    // First message from client should be the username
+    buffer := make([]byte, 1024)
+    n, err := conn.Read(buffer)
+    if err != nil {
+        fmt.Println("Error reading username:", err)
+        conn.Close()
+        return
+    }
+    
+    username := strings.TrimSpace(string(buffer[:n]))
+    
+    // Lock for client registration
+    mutex.Lock()
+    clients[username] = conn
+    usernames[conn] = username
+    mutex.Unlock()
+    
+    // Announce new connection
+    connectionMsg := fmt.Sprintf("%s has joined the chat", username)
+    broadcastMessage(connectionMsg, username)
+    
+    // Broadcast updated user list after short delay
+    time.Sleep(100 * time.Millisecond)
+    broadcastConnectedUsers()
+    
+    // Cleanup on disconnect
+    defer func() {
+        mutex.Lock()
+        delete(clients, username)
+        delete(usernames, conn)
+        mutex.Unlock()
+        
+        disconnectMsg := fmt.Sprintf("%s has left the chat", username)
+        broadcastMessage(disconnectMsg, username)
+        broadcastConnectedUsers()
+        conn.Close()
+    }()
+    
+    messageBuffer := make([]byte, 1024)
+    for {
+        n, err := conn.Read(messageBuffer)
+        if err != nil {
+            fmt.Printf("%s disconnected: %v\n", username, err)
+            return
+        }
+        
+        message := string(messageBuffer[:n])
+        message = strings.TrimSpace(message)
+        formattedMsg := fmt.Sprintf("%s: %s", username, message)
+        broadcastMessage(formattedMsg, username)
+    }
 }
+
