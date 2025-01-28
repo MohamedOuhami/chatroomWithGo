@@ -1,11 +1,11 @@
 package main
 
 import (
+	"ChatroomWithGo/utils"
 	"fmt"
 	"log"
 	"net"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +24,8 @@ var (
 )
 
 func main() {
+
+	utils.ConnectToDb()
 
 	// Start the server
 	listener := startServer()
@@ -54,128 +56,124 @@ func main() {
 	}
 }
 
-func broadcastMessage(message string, senderId int){
-  mutex.RLock()
-  defer mutex.RUnlock()
-
-  for id,conn := range clients {
-    if id != senderId {
-      _,err := conn.Write([]byte(message))
-      if err != nil {
-        println("There was an error broadcasting the message :",err)
-      }
+func startServer() net.Listener {
+    // Listening for the incoming connections
+    listener, err := net.Listen("tcp", "localhost:8000")
+    // Checking if there was an error
+    if err != nil {
+        fmt.Println("There was a server error ", err)
+        return nil
     }
-    
-  }
+    return listener
+}
+func appendToLog(message string) {
+    // Logging the entry in the serverLog
+    file, Openerr := os.OpenFile("../logs/serverLog.txt", os.O_APPEND|os.O_WRONLY, 0666)
+    if Openerr != nil {
+        log.Fatal("There was an error opening the logFile", Openerr)
+    }
+    _, fileErr := file.Write([]byte(message))
+    if fileErr != nil {
+        log.Fatal("There was an error writing to Log File", fileErr)
+    }
+    defer file.Close()
+}
+func createLogFile() {
+    _, err := os.Create("../logs/serverLog.txt")
+    if err != nil {
+        log.Fatal("There was a file creation error", err)
+    }
 }
 
-func broadcastConnectedUsers(){
-  mutex.RLock()
-  defer mutex.RUnlock()
+func broadcastMessage(message string, senderId int) {
+	mutex.RLock()
+	defer mutex.RUnlock()
+	// Format the message to include timestamp
+	messageWithTimestamp := message + " ---- " + time.Now().Format(time.RFC1123) + "\n"
 
-  var allUserIds string
-// Iterate over the clients map and collect all user IDs
-	for id := range clients {
-		allUserIds += "User " + strconv.Itoa(id) + "\n" // Concatenate each ID with a newline to separate them
+	// Broadcast to all clients, including sender
+	for _, conn := range clients {
+		_, err := conn.Write([]byte(message + "\n"))
+		if err != nil {
+			println("There was an error broadcasting the message:", err)
+		}
 	}
 
-  for _,conn := range clients {
+	// Log the message
+	appendToLog(messageWithTimestamp)
+}
 
-    _,err := conn.Write([]byte(allUserIds))
+func broadcastConnectedUsers() {
+	mutex.RLock()
+	defer mutex.RUnlock()
 
-    if err != nil {
-      println("There was an error sending the connected users ",err)
-    }
+	// Format the connected users list
+	var userList strings.Builder
+	userList.WriteString("UserList:\n")
+	userList.WriteString("-----------------\n")
+	userList.WriteString(fmt.Sprintf("Total Users: %d\n", len(clients)))
+	userList.WriteString("-----------------\n")
 
-  }
+	for clientId := range clients {
+		userList.WriteString(fmt.Sprintf("User %d\n", clientId))
+	}
+
+	message := userList.String()
+
+	// Send to all connected clients
+	for _, conn := range clients {
+		_, err := conn.Write([]byte(message))
+		if err != nil {
+			println("Error sending user list:", err)
+		}
+	}
 }
 
 func handleClient(conn net.Conn) {
-
+	// Lock for client registration
 	mutex.Lock()
 	userId := id
 	clients[userId] = conn
 	id++
 	mutex.Unlock()
 
-	connectionMessage := "Client " + strconv.Itoa(userId) + " is now connected" 
-  connectionMessageTimeStamped := connectionMessage + " ---- " + time.Now().Format(time.RFC1123) + "\n"
-	println(connectionMessageTimeStamped)
-	appendToLog(connectionMessageTimeStamped)
+	// Announce new connection
+	connectionMsg := fmt.Sprintf("Client %d has joined the chat", userId)
+	broadcastMessage(connectionMsg, userId)
 
-  broadcastMessage(connectionMessage,userId)
-  broadcastConnectedUsers()
+	// Broadcast updated user list after short delay
+	time.Sleep(100 * time.Millisecond)
+	broadcastConnectedUsers()
 
+	// Cleanup on disconnect
 	defer func() {
-
 		mutex.Lock()
 		delete(clients, userId)
 		mutex.Unlock()
-		conn.Close()
 
+		// Announce disconnection
+		disconnectMsg := fmt.Sprintf("Client %d has left the chat", userId)
+		broadcastMessage(disconnectMsg, userId)
+
+		// Update user list
+		broadcastConnectedUsers()
+
+		conn.Close()
 	}()
 
-	// Create a buffer to put the received data in It ( It is a slice that we will change its content)
-	buffer := make([]byte, 1024) // it is of length 1024
-
+	buffer := make([]byte, 1024)
 	for {
-		// Read the data coming from the client
 		n, err := conn.Read(buffer)
-
 		if err != nil {
-			fmt.Println("There was a connection error : ", err)
+			fmt.Printf("Client %d disconnected: %v\n", userId, err)
 			return
 		}
 
-		// Print the received data
+		message := string(buffer[:n])
+		message = strings.TrimSpace(message)
 
-    formatedMessage := "Client " + strconv.Itoa(userId) + " : " + string(buffer[:n])
-		formatedMessage = strings.TrimSpace(formatedMessage)
-
-		appendToLog(formatedMessage + " ---- " + time.Now().Format(time.RFC1123) + "\n")
-
-    broadcastMessage(formatedMessage,userId)
-
-
+		// Format and broadcast the message
+		formattedMsg := fmt.Sprintf("Client %d: %s", userId, message)
+		broadcastMessage(formattedMsg, userId)
 	}
-
-}
-
-func startServer() net.Listener {
-
-	// Listening for the incoming connections
-	listener, err := net.Listen("tcp", "localhost:8000")
-
-	// Checking if there was an error
-	if err != nil {
-		fmt.Println("There was a server error ", err)
-		return nil
-	}
-
-	return listener
-}
-
-func appendToLog(message string) {
-
-	// Logging the entry in the serverLog
-	file, Openerr := os.OpenFile("../logs/serverLog.txt", os.O_APPEND|os.O_WRONLY, 0666)
-
-	if Openerr != nil {
-		log.Fatal("There was an error opening the logFile", Openerr)
-	}
-	_, fileErr := file.Write([]byte(message))
-
-	if fileErr != nil {
-		log.Fatal("There was an error writing to Log File", fileErr)
-	}
-
-	defer file.Close()
-}
-
-func createLogFile() {
-	_, err := os.Create("../logs/serverLog.txt")
-	if err != nil {
-		log.Fatal("There was a file creation error", err)
-	}
-
 }

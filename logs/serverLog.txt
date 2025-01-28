@@ -1,8 +1,0 @@
-Client 1 is now connected ----- Mon, 27 Jan 2025 21:29:16 +01
-Client 1 Hello ---- Mon, 27 Jan 2025 21:29:25 +01
-Client 2 is now connected ----- Mon, 27 Jan 2025 21:30:37 +01
-Client 2 Salam Mohamed ---- Mon, 27 Jan 2025 21:30:40 +01
-Client 1 Salam Najat ---- Mon, 27 Jan 2025 21:30:47 +01
-Client 1 Kib9iti mn sba3k ---- Mon, 27 Jan 2025 21:30:54 +01
-Client 2 labas 3lih lhamdolilah ---- Mon, 27 Jan 2025 21:30:59 +01
-Client 1 Salam Najat ---- Mon, 27 Jan 2025 21:32:57 +01
