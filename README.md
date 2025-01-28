@@ -1,12 +1,12 @@
 
-# Project Name: Face Authentication Web Application
+# Go-Chat: ChatRoom made with Go and TCP 
 
 ## Overview
 
-This project is a **Face Authentication Web Application** built using Go and PostgreSQL. It involves user registration, authentication via facial recognition, and a messaging feature. The app is structured into two main parts: a server that handles all backend operations and a client for user interaction.
+This project is a **Chatroom Terminal Application** built using Go and PostgreSQL and TCP. It involves user registration, authentication via username and password, and a messaging feature. The app is structured into two main parts: a server that handles all backend operations and a client for user interaction.
 
 The application includes the following key features:
-- **Authentication**: Users can authenticate using their face and passphrase.
+- **Authentication**: Users can authenticate using their username and password.
 - **Registration**: Users can register their face and passphrase for secure login.
 - **Messaging**: Users can send and receive messages in a secure environment.
 
@@ -34,7 +34,7 @@ To run the application, ensure you have the following installed:
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/yourusername/yourrepository.git
+git clone https://github.com/MohamedOuhami/chatroomWithGo.git
 cd yourrepository
 ```
 
